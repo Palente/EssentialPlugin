@@ -17,8 +17,8 @@ namespace EssentialPlugin
 		private EssentialPlayerFactory factory;
 		private static readonly ILog Log = LogManager.GetLogger(typeof(EssentialServer));
 		public IConfiguration config;
-		private List<String> OpsList = new List<string>();
-		private List<EssentialPlayer> playersList = new List<EssentialPlayer>();
+		private List<string> OpsList = new();
+		private List<EssentialPlayer> playersList = new();
 		public EssentialServer(MiNetServer server)
 		{
 			_server = server;
@@ -50,7 +50,7 @@ namespace EssentialPlugin
 		}
 		public IMcpeMessageHandler CreatePlayer(INetworkHandler session, PlayerInfo playerInfo)
 		{
-			EssentialPlayer player = (EssentialPlayer) factory.CreatePlayer(_server, session.GetClientEndPoint(), playerInfo);
+			var player = (EssentialPlayer) factory.CreatePlayer(_server, session.GetClientEndPoint(), playerInfo);
 			player.NetworkHandler = session;
 			player.CertificateData = playerInfo.CertificateData;
 			player.Username = playerInfo.Username;
@@ -61,9 +61,12 @@ namespace EssentialPlugin
 			player.PlayerInfo = playerInfo;
             player.PlayerJoin += OnPlayerJoin;
             player.PlayerLeave += OnPlayerLeave;
-			if (player.IsOp()) player.PermissionLevel = PermissionLevel.Operator;
-			else player.PermissionLevel = PermissionLevel.Member;
-			return player;
+            player.SetOp(player.IsOp());
+            
+            //Subscribe to all events
+            player.OnMessageReceived += (sender, eventArgs) =>
+	            EventListener.getInstance().OnChatReceived(sender, eventArgs);
+            return player;
 		}
 
         public bool IsOp(string name)
@@ -79,14 +82,16 @@ namespace EssentialPlugin
 
 		private void OnPlayerJoin(object sender, PlayerEventArgs e)
 		{
-			EssentialPlayer player = (EssentialPlayer) e.Player;
+			//Not his job!
+			var player = (EssentialPlayer) e.Player;
 			playersList.Add(player);
 			BroadcastMessage($"§a[+] §e{player.Username} joined the server!");
 		}
 
 		private void OnPlayerLeave(object sender, PlayerEventArgs e)
 		{
-			EssentialPlayer player = (EssentialPlayer)e.Player;
+			// Not his job
+			var player = (EssentialPlayer)e.Player;
 			playersList.Remove(player);
 			BroadcastMessage($"§c[-] §e{player.Username} left the server!");
 		}
@@ -96,7 +101,9 @@ namespace EssentialPlugin
 		/// <param name="name">name of the player</param>
 		/// <returns>EssentialPlayer</returns>
 		public EssentialPlayer GetPlayer(string name)
-			=> playersList.Find(p => p.Username.ToLower() == name.ToLower());
+			=> playersList.Find(p => p.Username.Equals(name, StringComparison.CurrentCultureIgnoreCase));
+		public EssentialPlayer GetPlayer(Player player)
+			=> playersList.Find(p => p.Username == player.Username);
 		/// <summary>
 		/// Broadcast a message to all server!
 		/// </summary>

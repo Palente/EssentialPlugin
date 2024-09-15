@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Library</OutputType>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <Nullable>disable</Nullable>
   </PropertyGroup>
 
@@ -11,9 +11,16 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="log4net" Version="2.0.15" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="3.1.6" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="3.1.6" />
-    <PackageReference Include="MiNET" Version="1.0.2128" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="MiNET">
+      <HintPath>MiNET.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  
 
 </Project>

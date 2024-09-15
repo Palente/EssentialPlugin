@@ -2,11 +2,12 @@
 using MiNET;
 using MiNET.Net;
 using MiNET.UI;
-using Org.BouncyCastle.Crypto.Tls;
 using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Text;
+using EssentialPlugin.Events;
+using MiNET.Inventory;
 
 namespace EssentialPlugin
 {
@@ -45,8 +46,10 @@ namespace EssentialPlugin
         public void SetOp(bool op)
         {
             //Don't work!
-            if (op) this.PermissionLevel = PermissionLevel.Operator;
-            else this.PermissionLevel = PermissionLevel.Member;
+            this.ActionPermissions = op ? ActionPermissions.Operator : ActionPermissions.Default;
+            this.CommandPermission = op ? 4 : 0;
+            this.PermissionLevel = op ? PermissionLevel.Operator : PermissionLevel.Member;
+            this.SendAdventureSettings();
             EServer.SetOp(Username, op);
         }
         public override void HandleMcpeLogin(McpeLogin message)
@@ -59,6 +62,20 @@ namespace EssentialPlugin
             return base.GetServerSettingsForm();
         }
 
+        public delegate void PlayerMessage(object sender, MessageReceivedEventArgs eventArgs);
+        public event PlayerMessage OnMessageReceived;
+        //Proof of concept for chat event
+        public override void HandleMcpeText(McpeText message)
+        {
+            var text = message.message;
+            if (string.IsNullOrEmpty(text))
+                return;
+            var eventArgs = new MessageReceivedEventArgs(this, text);
+            OnMessageReceived?.Invoke(this, eventArgs);
+            if(eventArgs.Cancelled)
+                return;
+            EServer.BroadcastMessage(eventArgs.FormattedMessage);
+        }
 
     }
     public class EssentialPlayerFactory : PlayerFactory

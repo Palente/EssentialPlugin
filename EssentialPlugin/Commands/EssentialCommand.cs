@@ -44,29 +44,39 @@ namespace EssentialPlugin.Commands
         }*/
 
         [Command(Name = "give", Description = "Give Item")]
-        public void Give(EssentialPlayer player, int id, int amount)
+        public void Give(EssentialPlayer player, ItemTypeEnum itemName, int amount)
         {
             if (!player.IsOp())
             {
                 player.SendMessage("You don't have the permission to use this command!");
                 return;
             }
-            var item = ItemFactory.GetItem((short)id, 0, amount);
+            var item = ItemFactory.GetItem(itemName.Value, 0, amount);
             player.Inventory.AddItem(item, true);
-            player.SendMessage($"You received {item.Name}");
+            player.SendMessage($"You received {item.Id}");
         }
 
         [Command(Name = "op", Description = "Op a Player")]
-        public void Op(EssentialPlayer sender, string playername)
+        [Authorize(Permission = 4)]
+        public void Op(EssentialPlayer sender, Target target)
         {
-            var player = sender.EServer.GetPlayer(playername);
-            if (!sender.IsOp())
+            if (target.Players is null)
             {
-                player.SendMessage("You don't have the permission to use this command!");
+                sender.SendMessage("Player not found!");
                 return;
             }
-            player.SetOp(true);
-            player.EServer.BroadcastMessage($"§8{player.Username} is now Operator!", true);
+
+            foreach (var minetPlayer in target.Players)
+            {
+                var player = sender.EServer.GetPlayer(minetPlayer);
+                if (player is null)
+                {
+                    sender.SendMessage("Player could not be found!");
+                    continue;
+                }
+                player.SetOp(true);
+                player.EServer.BroadcastMessage($"§8{player.Username} is now Operator!", true);
+            }
         }
         [Command(Name = "deop", Description = "Deop a Player")]
         public void DeOp(EssentialPlayer sender, string playername)
